@@ -21,16 +21,7 @@ G019|Fresh Mutton (1kg)|Meat & Fish|40|900.00
 G020|Fresh Chicken (1kg)|Meat & Fish|100|280.00
 G021|Rui Fish (1kg)|Meat & Fish|60|450.00
 G022|Hilsa Fish (1kg)|Meat & Fish|25|1200.00
-G023|Coca-Cola (1.5L)|Beverages|200|90.00
-G024|Pran Mango Juice (1L)|Beverages|180|110.00
-G025|Mineral Water (1L)|Beverages|300|25.00
-G026|Fresh Bread (400g)|Snacks|120|65.00
-G027|Butter Cookies (200g)|Snacks|150|95.00
-G028|Pran Chanachur (200g)|Snacks|200|45.00
-G029|Detergent Powder (1kg)|Household|100|180.00
-G030|Dishwash Liquid (500ml)|Household|120|130.00
-G031|Toilet Soap (4pcs)|Personal Care|150|160.00
-G032|Shampoo (200ml)|Personal Care|90|250.00
+
 #END
 
 #ORDERS
