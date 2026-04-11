@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 #ifdef _WIN32
     #define CLEAR "cls"
@@ -16,6 +17,8 @@
 #define MAX_PHONE 15
 #define MAX_ADDRESS 200
 #define MAX_CATEGORY 30
+#define MAX_OUTLET_ID 20
+#define MAX_PHONE_ADMIN 15
 
 // ==================== STRUCTURES ====================
 
@@ -51,11 +54,19 @@ typedef struct Order {
     struct Order* next;
 } Order;
 
+// Admin structure for verification
+typedef struct Admin {
+    char outletId[MAX_OUTLET_ID];
+    char phone[MAX_PHONE_ADMIN];
+    struct Admin* next;
+} Admin;
+
 // ==================== GLOBAL VARIABLES ====================
 Product* inventory = NULL;      // Linked list of products
 Order* allOrders = NULL;         // Linked list of orders
 OrderItem* currentCart = NULL;   // Shopping cart
 int nextOrderId = 1000;          // Next available order ID
+Admin* adminList = NULL;         // Linked list of authorized admins
 
 // ==================== FUNCTION DECLARATIONS ====================
 
@@ -70,6 +81,13 @@ float readFloat(char* prompt);
 void saveAllData();
 void loadAllData();
 
+// Admin Verification Functions
+void loadAdminData();
+void saveAdminData();
+int verifyAdmin();
+int generateOTP();
+void sendOTP(char* phone, int otp);
+
 // Product Management Functions
 void addProduct(Product* p);
 Product* findProduct(char* id);
@@ -77,8 +95,6 @@ void showProducts();
 void searchAndShowProducts(char* searchTerm);
 void deleteProduct(char* id);
 void updateProduct(char* id);
-
-
 
 // Cart Management Functions
 void addToCart(char* productId, int qty);
@@ -126,7 +142,6 @@ void clearScreen(void) {
 void wait() {
     printf("\nPress Enter to continue...");
     getchar();
-   
 }
 
 void readString(char* prompt, char* output, int size) {
@@ -156,9 +171,135 @@ float readFloat(char* prompt) {
     return value;
 }
 
+// ==================== ADMIN VERIFICATION FUNCTIONS ====================
+
+// Load admin data from file
+void loadAdminData() {
+    FILE* f = fopen("admin_data.txt", "r");
+
+
+    char line[200];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\n")] = 0;
+
+        Admin* a = malloc(sizeof(Admin));
+        char* token = strtok(line, "|");
+        if (token) strcpy(a->outletId, token);
+        token = strtok(NULL, "|");
+        if (token) strcpy(a->phone, token);
+        a->next = NULL;
+
+        if (adminList == NULL) {
+            adminList = a;
+        } else {
+            Admin* curr = adminList;
+            while (curr->next != NULL) curr = curr->next;
+            curr->next = a;
+        }
+    }
+    fclose(f);
+}
+
+// Save admin data to file
+void saveAdminData() {
+    FILE* f = fopen("admin_data.txt", "w");
+    if (!f) {
+        printf("Error saving admin data!\n");
+        return;
+    }
+
+    Admin* curr = adminList;
+    while (curr != NULL) {
+        fprintf(f, "%s|%s\n", curr->outletId, curr->phone);
+        curr = curr->next;
+    }
+    fclose(f);
+}
+
+// Generate random 6-digit OTP
+int generateOTP() {
+    srand(time(NULL));
+    return 500000 + (rand() % 900000);
+}
+
+// Simulate sending OTP to mobile
+void sendOTP(char* phone, int otp) {
+
+    printf("\n OTP SENT TO MOBILE NUMBER: %s successful !\n", phone);
+    printf(" YOUR OTP IS: %d\n", otp);
+    printf(" OTP will expire in 5 minutes\n");
+
+}
+
+// Verify admin credentials with OTP
+int verifyAdmin() {
+    char outletId[MAX_OUTLET_ID];
+    char inputOTP[7];
+    int generatedOTP;
+    int attempts = 3;
+
+    printf("\n+====================================+\n");
+    printf("|         ADMIN VERIFICATION         |\n");
+    printf("+====================================+\n");
+
+    // Check if outlet ID matches
+    while (attempts > 0) {
+        printf("\nAttempts left: %d\n", attempts);
+        printf("Enter Outlet ID: ");
+        fgets(outletId, MAX_OUTLET_ID, stdin);
+        outletId[strcspn(outletId, "\n")] = 0;
+
+        // Search for outlet ID
+        Admin* curr = adminList;
+        int found = 0;
+
+        while (curr != NULL) {
+            if (strcmp(curr->outletId, outletId) == 0) {
+                found = 1;
+                // Generate and send OTP
+                generatedOTP = generateOTP();
+                sendOTP(curr->phone, generatedOTP);
+
+                // Verify OTP
+                printf("\nEnter OTP: ");
+                fgets(inputOTP, 7, stdin);
+                inputOTP[strcspn(inputOTP, "\n")] = 0;
+
+                if (atoi(inputOTP) == generatedOTP) {
+                    printf("\n VERIFICATION SUCCESSFUL! Welcome Admin!\n");
+                    sleep(1);
+                    return 1;  // Verified successfully
+                } else {
+                    printf("\n INVALID OTP!\n");
+                    attempts--;
+                    if (attempts > 0) {
+                        printf("Please try again.\n");
+                    }
+                    break;
+                }
+            }
+            curr = curr->next;
+        }
+
+        if (!found) {
+            printf("\n INVALID OUTLET ID!\n");
+            attempts--;
+            if (attempts > 0) {
+                printf("Please try again.\n");
+            }
+        }
+    }
+
+    printf("\n VERIFICATION FAILED! Too many failed attempts.\n");
+    sleep(1);
+    return 0;  // Verification failed
+}
+
 // ==================== FILE OPERATIONS ====================
 
 void saveAllData() {
+    saveAdminData();  // Save admin data first
+
     FILE* f = fopen("store_data.txt", "w");
     if (!f) {
         printf("Error saving data!\n");
@@ -191,6 +332,8 @@ void saveAllData() {
 }
 
 void loadAllData() {
+    loadAdminData();  // Load admin data first
+
     FILE* f = fopen("store_data.txt", "r");
     if (!f) {
         // Create sample products if no file exists
@@ -434,8 +577,6 @@ void updateProduct(char* id) {
 
     printf("Product updated successfully!\n");
 }
-
-
 
 // ==================== CART MANAGEMENT FUNCTIONS ====================
 
@@ -769,7 +910,6 @@ void updateOrderStatus(int id, char* newStatus) {
     printf("Order #%d status updated to '%s'!\n", id, newStatus);
 }
 
-
 //verify product exitance
 int verifyProduct(char* productId) {
     Product* curr = inventory;
@@ -784,14 +924,11 @@ int verifyProduct(char* productId) {
     return 0;
 }
 
-
-
 // ==================== CUSTOMER PORTAL FUNCTIONS ====================
 
 void browseAndBuy() {
     int choice,flag;
     char searchTerm[MAX_NAME];
-
 
     do {
         clearScreen();
@@ -811,8 +948,6 @@ void browseAndBuy() {
             while (addMore == 'y' || addMore == 'Y') {
                 char id[MAX_ID];
                 int qty;
-
-
 
                  while (1) {
                     flag=0;
@@ -840,7 +975,6 @@ void browseAndBuy() {
                 if(flag==1){
                     break;
                 }
-
 
                 qty = readInt("Enter quantity: ", 1, 999);
                 addToCart(id, qty);
@@ -887,7 +1021,6 @@ void browseAndBuy() {
                     break;
                 }
 
-
                 qty = readInt("Enter quantity: ", 1, 999);
                 addToCart(id, qty);
 
@@ -926,7 +1059,6 @@ void viewCartAndCheckout() {
 
         switch (choice) {
             case 1: {
-
                 int itemNum = readInt("Enter Sl. No to update: ", 1, getCartItemCount());
                 int newQty = readInt("Enter new quantity: ", 1, 999);
                 updateCartItem(itemNum, newQty);
@@ -1040,7 +1172,6 @@ void adminViewProducts() {
 }
 
 void adminUpdateProduct() {
-
     showProducts();
     char id[MAX_ID];
     printf("\n=== UPDATE PRODUCT ===\n");
@@ -1109,7 +1240,7 @@ void adminMenu() {
         printf("5. View All Orders\n");
         printf("6. Update Order Status\n");
         printf("7. Cancel Order\n");
-        printf("\n8. Save & Exit\n");
+        printf("\n8. Logout\n");
 
         choice = readInt("\nChoice: ", 1, 8);
 
@@ -1122,8 +1253,7 @@ void adminMenu() {
             case 6: adminUpdateOrderStatus(); wait(); break;
             case 7: adminCancelOrder(); wait(); break;
             case 8:
-                saveAllData();
-                printf("Returning to main menu...\n");
+                printf("Logging out...\n");
                 break;
         }
     } while (choice != 8);
@@ -1154,7 +1284,12 @@ int main() {
                 customerMenu();
                 break;
             case 2:
-                adminMenu();
+                if (verifyAdmin()) {
+                    adminMenu();
+                } else {
+                    printf("\nAccess Denied! Press Enter to continue...\n");
+                    getchar();
+                }
                 break;
             case 3:
                 saveAllData();
