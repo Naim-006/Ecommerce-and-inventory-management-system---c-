@@ -1,0 +1,47 @@
+#PRODUCTS
+G001|Fresh Broccoli|Vegetables|50|120.00
+G002|Organic Carrots|Vegetables|100|80.00
+G003|Tomatoes (1kg)|Vegetables|200|100.00
+G004|Potatoes (5kg)|Vegetables|150|180.00
+G005|Onions (1kg)|Vegetables|300|85.00
+G006|Green Chili (250g)|Vegetables|180|40.00
+G007|Basmati Rice (5kg)|Rice & Oil|80|550.00
+G008|Miniket Rice (5kg)|Rice & Oil|100|450.00
+G009|Fresh Eggs (12pcs)|Dairy & Eggs|200|130.00
+G010|Pasteurized Milk (1L)|Dairy & Eggs|150|85.00
+G011|Ghee (500g)|Dairy & Eggs|60|450.00
+G012|Yogurt (500g)|Dairy & Eggs|120|60.00
+G013|Sunflower Oil (5L)|Rice & Oil|90|850.00
+G014|Soybean Oil (5L)|Rice & Oil|120|750.00
+G015|Brown Sugar (1kg)|Spices & Sugar|100|110.00
+G016|Pure Honey (500g)|Spices & Sugar|45|380.00
+G017|Turmeric Powder (200g)|Spices & Sugar|200|65.00
+G018|Cumin Powder (200g)|Spices & Sugar|150|120.00
+G019|Fresh Mutton (1kg)|Meat & Fish|40|900.00
+G020|Fresh Chicken (1kg)|Meat & Fish|100|280.00
+G021|Rui Fish (1kg)|Meat & Fish|60|450.00
+G022|Hilsa Fish (1kg)|Meat & Fish|25|1200.00
+G023|Coca-Cola (1.5L)|Beverages|200|90.00
+G024|Pran Mango Juice (1L)|Beverages|180|110.00
+G025|Mineral Water (1L)|Beverages|300|25.00
+G026|Fresh Bread (400g)|Snacks|120|65.00
+G027|Butter Cookies (200g)|Snacks|150|95.00
+G028|Pran Chanachur (200g)|Snacks|200|45.00
+G029|Detergent Powder (1kg)|Household|100|180.00
+G030|Dishwash Liquid (500ml)|Household|120|130.00
+G031|Toilet Soap (4pcs)|Personal Care|150|160.00
+G032|Shampoo (200ml)|Personal Care|90|250.00
+#END
+
+#ORDERS
+1000|Md. Rahim Uddin|01712345678|House#12, Road#05, Mirpur-1, Dhaka-1216|1850.00|Delivered|1733568000
+1001|Nusrat Jahan|01987654321|Flat#3B, Block-C, Bashundhara R/A, Dhaka|560.00|Processing|1733654400
+1002|Kazi Rafiq|01552345678|Vill: Konabari, PO: Gazipur Sadar, Gazipur-1702|2390.00|Shipped|1733740800
+1003|Sharmin Akter|01876543210|House#45, Road#12, Dhanmondi-32, Dhaka|450.00|Delivered|1733827200
+1004|Abdul Karim|01733445566|Shwapno Outlet Counter, Mirpur-1, Dhaka|3250.00|Pending|1733913600
+1005|Fatema Begum|01611223344|Village: Bhabanipur, Upazila: Savar, Dhaka|890.00|Processing|1734000000
+1006|Mizanur Rahman|01999887766|Holding#22, College Road, Chittagong-4000|1670.00|Shipped|1734086400
+1007|Jesmin Akhter|01777665544|Shwapno Outlet, Bashundhara City, Dhaka|720.00|Delivered|1734172800
+1008|Shahidul Islam|01544455566|Road#02, Block-Ka, Mohakhali DOHS, Dhaka|4300.00|Processing|1734259200
+1009|Tahmina Sultana|01888899900|House#78, Lane#03, Uttara Sector-7, Dhaka-1230|1120.00|Pending|1734345600
+#END
