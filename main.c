@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <unistd.h>
+#include <stdio.h>   // input-output
+#include <stdlib.h>  // malloc, system
+#include <string.h>  // string operations
+#include <ctype.h>   // tolower
+#include <time.h>    // time, OTP
+#include <unistd.h>  // sleep
 
 #ifdef _WIN32
     #define CLEAR "cls"
