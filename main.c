@@ -1,9 +1,9 @@
-#include <stdio.h>   // input-output
-#include <stdlib.h>  // malloc, system
-#include <string.h>  // string operations
-#include <ctype.h>   // tolower
-#include <time.h>    // time, OTP
-#include <unistd.h>  // sleep
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <unistd.h>
 
 #ifdef _WIN32
     #define CLEAR "cls"
@@ -66,7 +66,8 @@ Product* inventory = NULL;      // Linked list of products
 Order* allOrders = NULL;         // Linked list of orders
 OrderItem* currentCart = NULL;   // Shopping cart
 int nextOrderId = 1000;          // Next available order ID
-Admin* adminList = NULL;         // Linked list of authorized admins
+Admin* adminList = NULL;
+int idtp = 0;         // Linked list of authorized admins
 
 // ==================== FUNCTION DECLARATIONS ====================
 
@@ -151,15 +152,40 @@ void readString(char* prompt, char* output, int size) {
 }
 
 int readInt(char* prompt, int min, int max) {
+    char input[100];
     int value;
+    int valid;
+    
     do {
+        valid = 1;
         printf("%s", prompt);
-        scanf("%d", &value);
-        getchar();
-        if (value < min || value > max) {
-            printf("Please enter a number between %d and %d!\n", min, max);
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+        
+        // Check for empty input
+        if (strlen(input) == 0) {
+            valid = 0;
         }
-    } while (value < min || value > max);
+        
+        // Check if all characters are digits
+        for (int i = 0; i < strlen(input) && valid; i++) {
+            if (!isdigit(input[i])) {
+                valid = 0;
+            }
+        }
+        
+        if (!valid) {
+            printf("\033[1;31mERROR: Invalid input! Please enter a valid number.\033[0m\n");
+            printf("Please enter a number between %d and %d.\n\n", min, max);
+        } else {
+            value = atoi(input);
+            if (value < min || value > max) {
+                printf("\033[1;31mERROR: Please enter a number between %d and %d!\033[0m\n\n", min, max);
+                valid = 0;
+            }
+        }
+    } while (!valid);
+    
     return value;
 }
 
@@ -531,6 +557,7 @@ void searchAndShowProducts(char* searchTerm) {
     }
 
     if (!found) {
+        idtp=1;
         printf("| No products found matching '%s'!                             |\n", searchTerm);
     }
     printf("+------------------------------------------------------------------+\n");
@@ -951,11 +978,11 @@ void browseAndBuy() {
 
                  while (1) {
                     flag=0;
-                     printf("\nEnter Product ID to purchase (or q to exit): ");
+                     printf("\nEnter Product ID to purchase (or 0 to exit): ");
                      scanf("%s", id);
                      getchar();
 
-                        if(strcmp(id, "q") == 0){
+                        if(strcmp(id, "0") == 0){
                          printf("Exiting product selection...\n");
 
                         flag=1;
@@ -979,15 +1006,46 @@ void browseAndBuy() {
                 qty = readInt("Enter quantity: ", 1, 999);
                 addToCart(id, qty);
 
+              while(1) {
                 printf("\nAdd another product? (y/n): ");
                 scanf(" %c", &addMore);
                 getchar();
-            }
+                if(addMore == 'y' || addMore == 'Y' || addMore == 'n' || addMore == 'N') {
+                    break;  
+                }
+                else {
+                    printf("Invalid input! Please enter 'y' or 'n'.\n");
+                }
+            } 
+        }
             wait();
         }
         else if (choice == 2) {
-            readString("Enter product name or category to search: ", searchTerm, MAX_NAME);
-            searchAndShowProducts(searchTerm);
+            int bb;
+
+            while(1){
+                  bb=0;
+                 readString("Enter product name or category to search (or 0 to exit): ", searchTerm, MAX_NAME);
+                 if (strcmp(searchTerm, "0") == 0) {
+                 printf("Exiting program...\n");
+                bb=1;
+                 break;
+                  }
+                  searchAndShowProducts(searchTerm);
+                if(idtp==1){
+                    printf(" Please try a different search term (or 0 to exit):\n");
+                    
+
+                }
+                else {
+                    break;
+                }
+           
+            }
+
+            if(bb==1){
+                break;
+            }
 
             char addMore = 'y';
             while (addMore == 'y' || addMore == 'Y') {
@@ -996,11 +1054,11 @@ void browseAndBuy() {
 
                  while (1) {
                     flag=0;
-                     printf("\nEnter Product ID to purchase (or q to exit): ");
+                     printf("\nEnter Product ID to purchase (or 0 to exit): ");
                      scanf("%s", id);
                      getchar();
 
-                        if(strcmp(id, "q") == 0){
+                        if(strcmp(id, "0") == 0){
                          printf("Exiting product selection...\n");
 
                         flag=1;
@@ -1023,11 +1081,18 @@ void browseAndBuy() {
 
                 qty = readInt("Enter quantity: ", 1, 999);
                 addToCart(id, qty);
-
+                while(1){
                 printf("\nAdd another product? (y/n): ");
                 scanf(" %c", &addMore);
                 getchar();
+                if(addMore == 'y' || addMore == 'Y' || addMore == 'n' || addMore == 'N') {
+                    break;  
+                }
+                else {
+                    printf("Invalid input! Please enter 'y' or 'n'.\n");
+                }
             }
+        }
             wait();
         }
 
@@ -1258,7 +1323,6 @@ void adminMenu() {
         }
     } while (choice != 8);
 }
-
 
 // ==================== MAIN FUNCTION ====================
 
