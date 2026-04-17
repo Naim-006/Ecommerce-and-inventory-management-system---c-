@@ -68,6 +68,7 @@ OrderItem* currentCart = NULL;   // Shopping cart
 int nextOrderId = 1000;          // Next available order ID
 Admin* adminList = NULL;
 int idtp = 0;         // Linked list of authorized admins
+int nextProductNumber = 1;       // Next product number for auto-generating ID
 
 // ==================== FUNCTION DECLARATIONS ====================
 
@@ -77,6 +78,7 @@ void wait();
 void readString(char* prompt, char* output, int size);
 int readInt(char* prompt, int min, int max);
 float readFloat(char* prompt);
+
 
 // File Operations
 void saveAllData();
@@ -96,6 +98,7 @@ void showProducts();
 void searchAndShowProducts(char* searchTerm);
 void deleteProduct(char* id);
 void updateProduct(char* id);
+void generateProductId(char* id);
 
 // Cart Management Functions
 void addToCart(char* productId, int qty);
@@ -114,6 +117,7 @@ void showOrderDetails(Order* order);
 void cancelOrder(int id);
 void updateOrderStatus(int id, char* newStatus);
 int verifyProduct(char* productId);
+void adminCreateorder();
 
 // Customer Portal Functions
 void customerMenu();
@@ -155,25 +159,25 @@ int readInt(char* prompt, int min, int max) {
     char input[100];
     int value;
     int valid;
-    
+
     do {
         valid = 1;
         printf("%s", prompt);
         fgets(input, sizeof(input), stdin);
         input[strcspn(input, "\n")] = 0;
-        
+
         // Check for empty input
         if (strlen(input) == 0) {
             valid = 0;
         }
-        
+
         // Check if all characters are digits
         for (int i = 0; i < strlen(input) && valid; i++) {
             if (!isdigit(input[i])) {
                 valid = 0;
             }
         }
-        
+
         if (!valid) {
             printf("\033[1;31mERROR: Invalid input! Please enter a valid number.\033[0m\n");
             printf("Please enter a number between %d and %d.\n\n", min, max);
@@ -185,16 +189,86 @@ int readInt(char* prompt, int min, int max) {
             }
         }
     } while (!valid);
-    
+
     return value;
 }
 
 float readFloat(char* prompt) {
+    char input[100];
     float value;
-    printf("%s", prompt);
-    scanf("%f", &value);
-    getchar();
+    int valid;
+    int decimalCount;
+    
+    do {
+        valid = 1;
+        decimalCount = 0;
+        printf("%s", prompt);
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+        
+        // Check for empty input
+        if (strlen(input) == 0) {
+            valid = 0;
+        }
+        
+        // Check if all characters are digits or a single decimal point
+        for (int i = 0; i < strlen(input) && valid; i++) {
+            if (input[i] == '.') {
+                decimalCount++;
+                if (decimalCount > 1) {
+                    valid = 0;  // Multiple decimal points
+                }
+            } else if (!isdigit(input[i])) {
+                valid = 0;  // Invalid character
+            }
+        }
+        
+        // Check that decimal point is not at the end (but allow at start like .5)
+        if (valid && decimalCount == 1) {
+            char* dotPos = strchr(input, '.');
+            if (*(dotPos + 1) == '\0') {
+                valid = 0;  // Decimal at end (e.g., "10.")
+            }
+        }
+        
+        if (!valid) {
+            printf("\033[1;31mERROR: Invalid input! Please enter a valid number (e.g., 10 or 10.99).\033[0m\n\n");
+        } else {
+            value = atof(input);
+            if (value < 0) {
+                printf("\033[1;31mERROR: Value cannot be negative!\033[0m\n\n");
+                valid = 0;
+            }
+        }
+    } while (!valid);
+    
     return value;
+}
+
+// Generate auto-incrementing product ID (P001, P002, P003, etc.)
+void generateProductId(char* id) {
+    // Find the highest product number from existing products
+    int maxNum = 0;
+    Product* curr = inventory;
+
+    while (curr != NULL) {
+        // Extract number from ID (e.g., "P001" -> 1, "P045" -> 45)
+        int num = 0;
+        for (int i = 1; i < strlen(curr->id); i++) {
+            if (isdigit(curr->id[i])) {
+                num = num * 10 + (curr->id[i] - '0');
+            }
+        }
+        if (num > maxNum) {
+            maxNum = num;
+        }
+        curr = curr->next;
+    }
+
+    nextProductNumber = maxNum + 1;
+
+    // Generate new ID in format P001, P002, etc.
+    sprintf(id, "P%03d", nextProductNumber);
 }
 
 // ==================== ADMIN VERIFICATION FUNCTIONS ====================
@@ -245,7 +319,7 @@ void saveAdminData() {
 // Generate random 6-digit OTP
 int generateOTP() {
     srand(time(NULL));
-    return 500000 + (rand() % 900000);
+    return (rand() % 900000);
 }
 
 // Simulate sending OTP to mobile
@@ -408,6 +482,9 @@ void loadAllData() {
         p5->next = NULL;
         p4->next = p5;
 
+        // Initialize nextProductNumber after sample products
+        nextProductNumber = 6;  // Next will be P006
+
         printf("Sample products loaded!\n");
         return;
     }
@@ -485,8 +562,27 @@ void loadAllData() {
             }
         }
     }
+
+    // After loading all products, calculate the next product number for auto-generation
+    int maxNum = 0;
+    Product* curr = inventory;
+    while (curr != NULL) {
+        int num = 0;
+        // Extract number from ID (e.g., "P001" -> 1, "P045" -> 45)
+        for (int i = 1; i < strlen(curr->id); i++) {
+            if (isdigit(curr->id[i])) {
+                num = num * 10 + (curr->id[i] - '0');
+            }
+        }
+        if (num > maxNum) {
+            maxNum = num;
+        }
+        curr = curr->next;
+    }
+    nextProductNumber = maxNum + 1;
+
     fclose(f);
-    printf("Data loaded successfully!\n");
+    printf("Data loaded successfully! Next product number: %d\n", nextProductNumber);
 }
 
 // ==================== PRODUCT MANAGEMENT FUNCTIONS ====================
@@ -537,6 +633,7 @@ void showProducts() {
 void searchAndShowProducts(char* searchTerm) {
     Product* curr = inventory;
     int found = 0;
+    
 
     printf("\n+------------------------------------------------------------------+\n");
     printf("|              SEARCH RESULTS FOR: %-20s |\n", searchTerm);
@@ -555,7 +652,7 @@ void searchAndShowProducts(char* searchTerm) {
         }
         curr = curr->next;
     }
-
+    
     if (!found) {
         idtp=1;
         printf("| No products found matching '%s'!                             |\n", searchTerm);
@@ -583,6 +680,8 @@ void deleteProduct(char* id) {
     printf("Product '%s' not found!\n", id);
 }
 
+// ONLY updateProduct FUNCTION FIXED (rest unchanged)
+
 void updateProduct(char* id) {
     Product* p = findProduct(id);
     if (p == NULL) {
@@ -590,19 +689,96 @@ void updateProduct(char* id) {
         return;
     }
 
-    printf("\nCurrent Product Details:");
-    printf("\n  Quantity: %d units", p->quantity);
-    printf("\n  Price: $%.2f\n", p->price);
-
-    printf("\nEnter new details (press Enter to keep current):\n");
-
-    int newQty = readInt("New quantity: ", 0, 9999);
-    float newPrice = readFloat("New price: $");
-
-    if (newQty >= 0) p->quantity = newQty;
-    if (newPrice >= 0) p->price = newPrice;
-
-    printf("Product updated successfully!\n");
+    int choice;
+    do {
+        clearScreen();
+        printf("\n+============================================+\n");
+        printf("|           UPDATE PRODUCT MENU              |\n");
+        printf("+============================================+\n");
+        printf("Product: %s (ID: %s)\n", p->name, p->id);
+        printf("Current Quantity: %d units\n", p->quantity);
+        printf("Current Price: $%.2f\n", p->price);
+        printf("+============================================+\n");
+        printf("\nWhat would you like to update?\n");
+        printf("1. Add Stock (Increase quantity)\n");
+        printf("2. Remove Stock (Decrease quantity)\n");
+        printf("3. Update Price\n");
+        printf("4. Cancel\n");
+        
+        choice = readInt("\nChoice: ", 1, 4);
+        
+        switch(choice) {
+            case 1: {
+                int addQty;
+                printf("\n--- ADD STOCK ---\n");
+                printf("Current quantity: %d units\n", p->quantity);
+                addQty = readInt("Enter quantity to ADD (or 0 to cancel): ", 0, 9999);
+                
+                if (addQty > 0) {
+                    p->quantity += addQty;
+                    saveAllData();
+                    printf("\nStock updated successfully!\n");
+                    printf("  Previous: %d units\n", p->quantity - addQty);
+                    printf("  Added: +%d units\n", addQty);
+                    printf("  New quantity: %d units\n", p->quantity);
+                } else {
+                    printf("\nOperation cancelled. No changes made.\n");
+                }
+                break;
+            }
+            
+            case 2: {
+                int removeQty;
+                printf("\n--- REMOVE STOCK ---\n");
+                printf("Current quantity: %d units\n", p->quantity);
+                removeQty = readInt("Enter quantity to REMOVE (or 0 to cancel): ", 0, p->quantity);
+                
+                if (removeQty > 0) {
+                    if (removeQty <= p->quantity) {
+                        p->quantity -= removeQty;
+                        saveAllData();
+                        printf("\nStock updated successfully!\n");
+                        printf("  Previous: %d units\n", p->quantity + removeQty);
+                        printf("  Removed: -%d units\n", removeQty);
+                        printf("  New quantity: %d units\n", p->quantity);
+                    } else {
+                        printf("\nCannot remove %d units! Only %d units available.\n", removeQty, p->quantity);
+                    }
+                } else {
+                    printf("\nOperation cancelled. No changes made.\n");
+                }
+                break;
+            }
+            
+            case 3: {
+                float newPrice;
+                printf("\n--- UPDATE PRICE ---\n");
+                printf("Current price: $%.2f\n", p->price);
+                newPrice = readFloat("Enter new price (or 0 to cancel): $");
+                
+                if (newPrice > 0) {
+                    printf("\nPrice updated successfully!\n");
+                    printf("  Old price: $%.2f\n", p->price);
+                    printf("  New price: $%.2f\n", newPrice);
+                    p->price = newPrice;
+                    saveAllData();
+                } else {
+                    printf("\nOperation cancelled. No changes made.\n");
+                }
+                break;
+            }
+            
+            case 4:
+                printf("\nOperation cancelled. No changes made.\n");
+                break;
+        }
+        
+        if (choice != 4) {
+            printf("\n");
+            wait();
+        }
+        
+    } while (choice != 4);
 }
 
 // ==================== CART MANAGEMENT FUNCTIONS ====================
@@ -904,6 +1080,10 @@ void cancelOrder(int id) {
         printf("Cannot cancel order #%d - Already delivered!\n", id);
         return;
     }
+    if (strcmp(order->status, "Shipped") == 0) {
+        printf("Cannot cancel order #%d - Already shipped!\n", id);
+        return;
+    }
 
     if (strcmp(order->status, "Cancelled") == 0) {
         printf("Order #%d is already cancelled!\n", id);
@@ -1011,12 +1191,12 @@ void browseAndBuy() {
                 scanf(" %c", &addMore);
                 getchar();
                 if(addMore == 'y' || addMore == 'Y' || addMore == 'n' || addMore == 'N') {
-                    break;  
+                    break;
                 }
                 else {
                     printf("Invalid input! Please enter 'y' or 'n'.\n");
                 }
-            } 
+            }
         }
             wait();
         }
@@ -1034,13 +1214,13 @@ void browseAndBuy() {
                   searchAndShowProducts(searchTerm);
                 if(idtp==1){
                     printf(" Please try a different search term (or 0 to exit):\n");
-                    
+
 
                 }
                 else {
                     break;
                 }
-           
+
             }
 
             if(bb==1){
@@ -1086,7 +1266,7 @@ void browseAndBuy() {
                 scanf(" %c", &addMore);
                 getchar();
                 if(addMore == 'y' || addMore == 'Y' || addMore == 'n' || addMore == 'N') {
-                    break;  
+                    break;
                 }
                 else {
                     printf("Invalid input! Please enter 'y' or 'n'.\n");
@@ -1157,9 +1337,13 @@ void viewMyOrders() {
     }
 
     showAllOrders();
-
+      while(1){
     int orderId = readInt("\nEnter Order ID to view details (0 to skip): ", 0, 9999);
-    if (orderId > 0) {
+
+
+        if(orderId == 0) {
+            break;}
+    else if (orderId > 0) {
         Order* order = findOrder(orderId);
         if (order != NULL) {
             showOrderDetails(order);
@@ -1172,9 +1356,12 @@ void viewMyOrders() {
             if (choice == 1) {
                 cancelOrder(orderId);
             }
-        } else {
+            break;
+        }
+        else {
             printf("Order #%d not found!\n", orderId);
         }
+     }
     }
     wait();
 }
@@ -1210,39 +1397,193 @@ void customerMenu() {
 // ==================== ADMIN PORTAL FUNCTIONS ====================
 
 void adminAddProduct() {
-    Product* p = malloc(sizeof(Product));
+    char name[MAX_NAME];
+    char category[MAX_CATEGORY];
+    int quantity;
+    float price;
 
     printf("\n=== ADD NEW PRODUCT ===\n");
-    readString("Product ID: ", p->id, MAX_ID);
 
-    if (findProduct(p->id) != NULL) {
-        printf("Product ID already exists!\n");
-        free(p);
+    while(1){
+
+    // Get product name first
+    readString("Product Name (0 to cancel): ", name, MAX_NAME);
+    if (strcmp(name, "0") == 0) {
+        printf("Operation cancelled. No product added.\n");
+       
         return;
     }
+    if(strcmp(name, "") == 0) {
+        printf("Product name cannot be empty! Please enter a valid name.\n");
+    }
+     else {
+        break;  // Valid name entered, exit loop
+    }
+   }
+    
 
-    readString("Product Name: ", p->name, MAX_NAME);
-    readString("Category: ", p->category, MAX_CATEGORY);
-    p->quantity = readInt("Quantity: ", 0, 9999);
-    p->price = readFloat("Price: $");
+    // Check if product with same name already exists
+    Product* existing = NULL;
+    Product* curr = inventory;
+    while (curr != NULL) {
+        if (strcmp(curr->name, name) == 0) {
+            existing = curr;
+            break;
+        }
+        curr = curr->next;
+    }
+
+    if (existing != NULL) {
+        // Product exists, ask for confirmation
+        printf("\n----------------------------------------\n");
+        printf("WARNING: Product '%s' already exists in inventory!\n", name);
+        printf("Current details:\n\n");
+        printf("  Product ID: %s\n", existing->id);
+        printf("  Current Quantity: %d units\n", existing->quantity);
+        printf("  Current Price: $%.2f\n--------------------------------\n\n", existing->price);
+
+        printf("1. Update existing product\n");
+        printf("2. add new product \n");
+        printf("3. Cancel\n");
+        int choice;
+        choice = readInt("Choice: ", 1, 3);
+
+        if (choice == 1) {
+            // Update existing product
+            printf("\n--- UPDATE PRODUCT ---\n");
+
+            // Get additional quantity to add
+            int addQty = readInt("Enter additional quantity to add: ", 0, 9999);
+            existing->quantity += addQty;
+
+            printf("Current price: $%.2f\n", existing->price);
+            float newPrice = readFloat("Enter new price (or 0 to keep current): $");
+
+            if (newPrice > 0) {
+                existing->price = newPrice;
+            }
+
+            saveAllData();
+            printf("\nProduct '%s' UPDATED successfully!\n", name);
+            printf("  New Quantity: %d units (+%d added)\n", existing->quantity, addQty);
+            printf("  New Price: $%.2f\n", existing->price);
+           
+        }
+        else if(choice == 2) {
+            adminAddProduct();  // Recursive call to add with new name
+        }
+        else {
+            printf("Operation cancelled. No changes made.\n");
+          
+        }
+        return;  // Add return here to exit function after handling existing product
+    }
+
+    // Product doesn't exist - add as new product
+    Product* p = malloc(sizeof(Product));
+
+    // Auto-generate product ID
+    generateProductId(p->id);
+    printf("Product ID: %s\n", p->id);
+
+    strcpy(p->name, name);
+    
+    // FIXED: Get category properly
+    readString("Category (0 to cancel): ", category, MAX_CATEGORY);
+    if (strcmp(category, "0") == 0) {
+        printf("Operation cancelled. No product added.\n");
+        free(p);  // Free allocated memory
+        
+        return;
+    }
+    strcpy(p->category, category);
+    
+    // FIXED: Quantity validation - readInt returns int, can't compare with "c"
+    quantity = readInt("Quantity: ", 0, 9999);
+    p->quantity = quantity;
+    
+    // FIXED: Price validation - readFloat returns float
+    price = readFloat("Price: $");
+    p->price = price;
+    
     p->next = NULL;
 
     addProduct(p);
     saveAllData();
-    printf("Product '%s' added successfully!\n", p->name);
+    printf("\nNew Product '%s' added successfully with ID: %s!\n", p->name, p->id);
+    wait();
 }
 
 void adminViewProducts() {
-    showProducts();
+   
+     int choice;
+    do {
+        clearScreen();
+        printf("+====================================+\n");
+        printf("|         Products View              |\n");
+        printf("+====================================+\n");
+        showProducts();
+        printf("=== PRODUCT MANAGEMENT ===\n");
+        printf("1. Search Products\n");
+        printf("2. Back\n");
+       
+
+        choice = readInt("\nChoice: ", 1, 2);
+
+        switch (choice) {
+            case 1:
+             while(1){
+                char searchTerm[MAX_NAME];
+                 readString("Enter product name or category to search (or 0 to exit): ", searchTerm, MAX_NAME);
+                 if (strcmp(searchTerm, "0") == 0) {
+                 printf("Exiting ...\n");
+                 break;
+                  }
+                  
+                  searchAndShowProducts(searchTerm);
+                if(idtp==1){
+                    printf(" Please try a different search term !\n");
+
+                }
+                else {
+                    break;
+                }
+
+            }break;
+
+            case 2: 
+            printf("Returning.");
+             sleep(1);
+            printf("..");
+             sleep(1);
+            printf("..!\n");
+           
+            return;  
+            break;
+        }
+
+    } while (choice != 2);
 }
+
 
 void adminUpdateProduct() {
     showProducts();
     char id[MAX_ID];
+    char input[10];
+    
     printf("\n=== UPDATE PRODUCT ===\n");
-    readString("Product ID: ", id, MAX_ID);
+    printf("Enter Product ID (or 'c' to cancel): ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0;
+    
+    // Check for cancellation
+    if (strcmp(input, "c") == 0 || strcmp(input, "C") == 0) {
+        printf("\nOperation cancelled.\n");
+        return;
+    }
+    
+    strcpy(id, input);
     updateProduct(id);
-    saveAllData();
 }
 
 void adminDeleteProduct() {
@@ -1253,15 +1594,251 @@ void adminDeleteProduct() {
     deleteProduct(id);
     saveAllData();
 }
+void adminCreateorder() {
+    printf("\n=== ADMIN CREATE ORDER ===\n");
+
+    showProducts();
+
+    char addMore = 'y';
+
+    while (addMore == 'y' || addMore == 'Y') {
+        char id[MAX_ID];
+        int qty;
+        int flag = 0;
+
+        // ===== PRODUCT SELECTION =====
+        while (1) {
+            printf("\nEnter Product ID to add (or 0 to exit, 'c' to cancel): ");
+            scanf("%s", id);
+            getchar();
+
+            if (strcmp(id, "c") == 0 || strcmp(id, "C") == 0) {
+                printf("Order creation cancelled.\n");
+                clearCart();
+                return;
+            }
+
+            if (strcmp(id, "0") == 0) {
+                printf("Exiting product selection...\n");
+                flag = 1;
+                break;
+            }
+            else if (verifyProduct(id)) {
+                break;
+            }
+            else {
+                printf("\n\033[1;31mERROR: Product '%s' not found!\033[0m\n", id);
+            }
+        }
+
+        if (flag == 1) break;
+
+        // ===== QUANTITY INPUT WITH CANCEL =====
+        char qtyInput[20];
+        while (1) {
+            printf("Enter quantity (or 'c' to cancel): ");
+            fgets(qtyInput, sizeof(qtyInput), stdin);
+            qtyInput[strcspn(qtyInput, "\n")] = 0;
+
+            if (strcmp(qtyInput, "c") == 0 || strcmp(qtyInput, "C") == 0) {
+                printf("Order creation cancelled.\n");
+                clearCart();
+                return;
+            }
+
+            int valid = 1;
+            for (int i = 0; i < strlen(qtyInput); i++) {
+                if (!isdigit(qtyInput[i])) {
+                    valid = 0;
+                    break;
+                }
+            }
+
+            if (valid) {
+                qty = atoi(qtyInput);
+                if (qty > 0 && qty <= 999) break;
+            }
+
+            printf("Invalid quantity!\n");
+        }
+
+        addToCart(id, qty);
+
+        // ===== ADD MORE =====
+        while (1) {
+            printf("\nAdd another product? (y/n or 'c' to cancel): ");
+            scanf(" %c", &addMore);
+            getchar();
+
+            if (addMore=='c' || addMore=='C') {
+                printf("Order creation cancelled.\n");
+                clearCart();
+                return;
+            }
+
+            if (addMore=='y'||addMore=='Y'||addMore=='n'||addMore=='N') {
+                break;
+            } else {
+                printf("Invalid input!\n");
+            }
+        }
+    }
+
+    if (currentCart == NULL) {
+        printf("\nCart is empty. Order not created.\n");
+        return;
+    }
+
+    // ===== CREATE ORDER =====
+    Order* order = malloc(sizeof(Order));
+    order->id = nextOrderId++;
+    order->orderDate = time(NULL);
+    order->next = NULL;
+    order->total = getCartTotal();
+    strcpy(order->status, "Processing");
+    order->items = NULL;
+
+    printf("\n=== CUSTOMER INFO ===\n");
+
+    char input[MAX_NAME];
+
+    // NAME
+    readString("Customer Name (or 'c' to cancel): ", input, MAX_NAME);
+    if (strcmp(input, "c") == 0 || strcmp(input, "C") == 0) {
+        printf("Order creation cancelled.\n");
+        clearCart();
+        free(order);
+        return;
+    }
+    strcpy(order->customerName, input);
+
+    // PHONE
+    readString("Phone (or 'c' to cancel): ", input, MAX_PHONE);
+    if (strcmp(input, "c") == 0 || strcmp(input, "C") == 0) {
+        printf("Order creation cancelled.\n");
+        clearCart();
+        free(order);
+        return;
+    }
+    strcpy(order->phone, input);
+
+    // ADDRESS
+    readString("Address (or 'c' to cancel): ", input, MAX_ADDRESS);
+    if (strcmp(input, "c") == 0 || strcmp(input, "C") == 0) {
+        printf("Order creation cancelled.\n");
+        clearCart();
+        free(order);
+        return;
+    }
+    strcpy(order->address, input);
+
+    // ===== MOVE ITEMS =====
+    OrderItem* cartItem = currentCart;
+
+    while (cartItem != NULL) {
+        OrderItem* item = malloc(sizeof(OrderItem));
+        *item = *cartItem;
+        item->next = order->items;
+        order->items = item;
+
+        Product* p = findProduct(cartItem->productId);
+        if (p != NULL) {
+            p->quantity -= cartItem->quantity;
+        }
+
+        cartItem = cartItem->next;
+    }
+
+    // ===== SAVE ORDER =====
+    if (allOrders == NULL) {
+        allOrders = order;
+    } else {
+        Order* curr = allOrders;
+        while (curr->next != NULL) curr = curr->next;
+        curr->next = order;
+    }
+
+    clearCart();
+    saveAllData();
+
+    printf("\nORDER CREATED SUCCESSFULLY!\n");
+    printf("Order ID: #%d\n", order->id);
+}
+
+void ShowOrdersByName(char* searchTerm) {
+    Order* curr = allOrders;
+    int found = 0;
+
+    printf("\n+============================================================+\n");
+    printf("|        SEARCH RESULTS FOR CUSTOMER: %-18s |\n", searchTerm);
+    printf("+============================================================+\n");
+    printf("| %-8s | %-15s | %10s | %-12s |\n",
+           "Order ID", "Customer", "Total", "Status");
+    printf("+------------------------------------------------------------+\n");
+
+    while (curr != NULL) {
+        if (strstr(curr->customerName, searchTerm) != NULL) {
+            printf("| #%-7d | %-15s | $%8.2f | %-12s |\n",
+                   curr->id, curr->customerName,
+                   curr->total, curr->status);
+            found = 1;
+        }
+        curr = curr->next;
+    }
+
+    if (!found) {
+        printf("| No orders found for '%s'!                               |\n", searchTerm);
+    }
+
+    printf("+============================================================+\n");
+}
 
 void adminViewOrders() {
+    clearScreen();
     showAllOrders();
+    printf("1. Search by name\n");
+    printf("2. order details\n");
+    printf("3. Back\n");
+    int choice=readInt("Choice: ", 1, 3);
+    if(choice==1){
+        char searchTerm[MAX_NAME];
+        readString("Enter customer name to search (or 0 to exit): ", searchTerm, MAX_NAME);
+        if (strcmp(searchTerm, "0") == 0) {
+            printf("Exiting search...\n");
+            return;
+        }
+        ShowOrdersByName(searchTerm);
+    }
+    else if(choice==2){
+        int orderId = readInt("\nEnter Order ID to view details (0 to exit): ", 0, 9999);
+        if(orderId == 0) {
+            printf("Exiting order details...\n");
+            return;
+        }
+        Order* order = findOrder(orderId);
+        if (order != NULL) {
+            showOrderDetails(order);
+        }
+        else {
+            printf("Order #%d not found!\n", orderId);
+        }       
+    }
+     else {
+        printf("Returning to menu...");
+        sleep(1);
+        return;
+    }
+    
 }
 
 void adminUpdateOrderStatus(void) {
     showAllOrders();
     printf("\n=== UPDATE ORDER STATUS ===\n");
-    int id = readInt("Order ID: ", 1000, 9999);
+    int id = readInt("Order ID(0 to quit): ", 0, 9999);
+        if (id == 0) {
+            printf("Operation cancelled.\n");
+            return;
+        }
     Order* order = findOrder(id);
 
     if (order == NULL) {
@@ -1285,12 +1862,17 @@ void adminUpdateOrderStatus(void) {
 void adminCancelOrder(void) {
     showAllOrders();
     printf("\n=== CANCEL ORDER ===\n");
-    int id = readInt("Order ID: ", 1000, 9999);
+    int id = readInt("Order ID(0 to quit): ", 0, 9999);
+    if (id == 0) {
+        printf("Operation cancelled.\n");
+        return;
+    }
     cancelOrder(id);
 }
 
 void adminMenu() {
     int choice;
+    int ch, oc;
     do {
         clearScreen();
         printf("+====================================+\n");
@@ -1299,29 +1881,57 @@ void adminMenu() {
         printf("=== PRODUCT MANAGEMENT ===\n");
         printf("1. Add Product\n");
         printf("2. View All Products\n");
-        printf("3. Update Product\n");
-        printf("4. Delete Product\n");
+        printf("3. Product Operations\n");
         printf("\n=== ORDER MANAGEMENT ===\n");
+   
+        printf("4. Create Order\n");
         printf("5. View All Orders\n");
-        printf("6. Update Order Status\n");
-        printf("7. Cancel Order\n");
-        printf("\n8. Logout\n");
+        printf("6. Order Operations\n");
+        printf("\n7. Logout\n");
 
-        choice = readInt("\nChoice: ", 1, 8);
+        choice = readInt("\nChoice: ", 1, 7);
 
         switch (choice) {
             case 1: adminAddProduct(); wait(); break;
-            case 2: adminViewProducts(); wait(); break;
-            case 3: adminUpdateProduct(); wait(); break;
-            case 4: adminDeleteProduct(); wait(); break;
+            case 2: adminViewProducts();  break;
+            case 3: 
+                clearScreen();
+                printf("+====================================+\n");
+                printf("|          PRODUCT Operations        |\n");   
+                printf("+====================================+\n");
+                printf("1. Update Product\n");
+                printf("2. Delete Product\n");
+                printf("3. Back\n");
+                ch = readInt("\nChoice: ", 1, 3);
+                switch(ch) {
+                    case 1: adminUpdateProduct(); wait(); break;
+                    case 2: adminDeleteProduct(); wait(); break;
+                    case 3: break;
+                }
+                break;
+            case 4: adminCreateorder(); wait(); break;
             case 5: adminViewOrders(); wait(); break;
-            case 6: adminUpdateOrderStatus(); wait(); break;
-            case 7: adminCancelOrder(); wait(); break;
-            case 8:
+            case 6: 
+                clearScreen();
+                printf("+====================================+\n");
+                printf("|          ORDER Operations          |\n");   
+                printf("+====================================+\n");
+                printf("1. Update Order Status\n");
+                printf("2. Cancel Order\n");
+                printf("3. Back\n");
+                oc = readInt("\nChoice: ", 1, 3);
+                switch(oc) {
+                    case 1: adminUpdateOrderStatus(); wait(); break;
+                    case 2: adminCancelOrder(); wait(); break;
+                    case 3: break;
+                }
+                break;
+
+            case 7:
                 printf("Logging out...\n");
                 break;
         }
-    } while (choice != 8);
+    } while (choice != 7);  
 }
 
 // ==================== MAIN FUNCTION ====================
@@ -1349,7 +1959,7 @@ int main() {
                 customerMenu();
                 break;
             case 2:
-                if (verifyAdmin()) {
+                if (verifyAdmin()==1) {
                     adminMenu();
                 } else {
                     printf("\nAccess Denied! Press Enter to continue...\n");
