@@ -14,11 +14,11 @@
 // ==================== CONSTANTS ====================
 #define MAX_NAME 50
 #define MAX_ID 10
-#define MAX_PHONE 15
+#define MAX_PHONE 11
 #define MAX_ADDRESS 200
 #define MAX_CATEGORY 30
 #define MAX_OUTLET_ID 20
-#define MAX_PHONE_ADMIN 15
+#define MAX_PHONE_ADMIN 11
 
 // ==================== STRUCTURES ====================
 
@@ -62,12 +62,12 @@ typedef struct Admin {
 } Admin;
 
 // ==================== GLOBAL VARIABLES ====================
-Product* inventory = NULL;      // Linked list of products
-Order* allOrders = NULL;         // Linked list of orders
+Product* inventory = NULL;      // starting product
+Order* allOrders = NULL;         // starting orders
 OrderItem* currentCart = NULL;   // Shopping cart
 int nextOrderId = 1000;          // Next available order ID
-Admin* adminList = NULL;
-int idtp = 0;         // Linked list of authorized admins
+Admin* adminList = NULL;  // starting admins
+int idtp = 0;        // braking a loop in search function
 int nextProductNumber = 1;       // Next product number for auto-generating ID
 
 // ==================== FUNCTION DECLARATIONS ====================
@@ -78,7 +78,6 @@ void wait();
 void readString(char* prompt, char* output, int size);
 int readInt(char* prompt, int min, int max);
 float readFloat(char* prompt);
-
 
 // File Operations
 void saveAllData();
@@ -91,7 +90,7 @@ int verifyAdmin();
 int generateOTP();
 void sendOTP(char* phone, int otp);
 
-// Product Management Functions
+// Common Functions (Used by both portals)
 void addProduct(Product* p);
 Product* findProduct(char* id);
 void showProducts();
@@ -99,8 +98,6 @@ void searchAndShowProducts(char* searchTerm);
 void deleteProduct(char* id);
 void updateProduct(char* id);
 void generateProductId(char* id);
-
-// Cart Management Functions
 void addToCart(char* productId, int qty);
 void showCart();
 void updateCartItem(int itemNumber, int newQty);
@@ -108,8 +105,6 @@ void removeCartItem(int itemNumber);
 float getCartTotal();
 void clearCart();
 int getCartItemCount();
-
-// Order Management Functions
 void placeOrder();
 void showAllOrders();
 Order* findOrder(int id);
@@ -117,7 +112,6 @@ void showOrderDetails(Order* order);
 void cancelOrder(int id);
 void updateOrderStatus(int id, char* newStatus);
 int verifyProduct(char* productId);
-void adminCreateorder();
 
 // Customer Portal Functions
 void customerMenu();
@@ -131,6 +125,8 @@ void adminAddProduct();
 void adminViewProducts();
 void adminUpdateProduct();
 void adminDeleteProduct();
+void adminCreateorder();
+void ShowOrdersByName(char* searchTerm);
 void adminViewOrders();
 void adminUpdateOrderStatus();
 void adminCancelOrder();
@@ -138,7 +134,17 @@ void adminCancelOrder();
 // Main Function
 int main(void);
 
-// ==================== UTILITY FUNCTIONS ====================
+
+
+
+
+
+
+
+//========================================================================
+//----------------------  UTILITY Functions ------------------------------
+//========================================================================
+
 
 void clearScreen(void) {
     system(CLEAR);
@@ -245,157 +251,17 @@ float readFloat(char* prompt) {
     return value;
 }
 
-// Generate auto-incrementing product ID (P001, P002, P003, etc.)
-void generateProductId(char* id) {
-    // Find the highest product number from existing products
-    int maxNum = 0;
-    Product* curr = inventory;
-
-    while (curr != NULL) {
-        // Extract number from ID (e.g., "P001" -> 1, "P045" -> 45)
-        int num = 0;
-        for (int i = 1; i < strlen(curr->id); i++) {
-            if (isdigit(curr->id[i])) {
-                num = num * 10 + (curr->id[i] - '0');
-            }
-        }
-        if (num > maxNum) {
-            maxNum = num;
-        }
-        curr = curr->next;
-    }
-
-    nextProductNumber = maxNum + 1;
-
-    // Generate new ID in format P001, P002, etc.
-    sprintf(id, "P%03d", nextProductNumber);
-}
-
-// ==================== ADMIN VERIFICATION FUNCTIONS ====================
-
-// Load admin data from file
-void loadAdminData() {
-    FILE* f = fopen("admin_data.txt", "r");
 
 
-    char line[200];
-    while (fgets(line, sizeof(line), f)) {
-        line[strcspn(line, "\n")] = 0;
 
-        Admin* a = malloc(sizeof(Admin));
-        char* token = strtok(line, "|");
-        if (token) strcpy(a->outletId, token);
-        token = strtok(NULL, "|");
-        if (token) strcpy(a->phone, token);
-        a->next = NULL;
 
-        if (adminList == NULL) {
-            adminList = a;
-        } else {
-            Admin* curr = adminList;
-            while (curr->next != NULL) curr = curr->next;
-            curr->next = a;
-        }
-    }
-    fclose(f);
-}
 
-// Save admin data to file
-void saveAdminData() {
-    FILE* f = fopen("admin_data.txt", "w");
-    if (!f) {
-        printf("Error saving admin data!\n");
-        return;
-    }
 
-    Admin* curr = adminList;
-    while (curr != NULL) {
-        fprintf(f, "%s|%s\n", curr->outletId, curr->phone);
-        curr = curr->next;
-    }
-    fclose(f);
-}
 
-// Generate random 6-digit OTP
-int generateOTP() {
-    srand(time(NULL));
-    return (rand() % 900000);
-}
+//========================================================================
+//----------------------  File Operation Functions ----------------------
+//========================================================================
 
-// Simulate sending OTP to mobile
-void sendOTP(char* phone, int otp) {
-
-    printf("\n OTP SENT TO MOBILE NUMBER: %s successful !\n", phone);
-    printf(" YOUR OTP IS: %d\n", otp);
-    printf(" OTP will expire in 5 minutes\n");
-
-}
-
-// Verify admin credentials with OTP
-int verifyAdmin() {
-    char outletId[MAX_OUTLET_ID];
-    char inputOTP[7];
-    int generatedOTP;
-    int attempts = 3;
-
-    printf("\n+====================================+\n");
-    printf("|         ADMIN VERIFICATION         |\n");
-    printf("+====================================+\n");
-
-    // Check if outlet ID matches
-    while (attempts > 0) {
-        printf("\nAttempts left: %d\n", attempts);
-        printf("Enter Outlet ID: ");
-        fgets(outletId, MAX_OUTLET_ID, stdin);
-        outletId[strcspn(outletId, "\n")] = 0;
-
-        // Search for outlet ID
-        Admin* curr = adminList;
-        int found = 0;
-
-        while (curr != NULL) {
-            if (strcmp(curr->outletId, outletId) == 0) {
-                found = 1;
-                // Generate and send OTP
-                generatedOTP = generateOTP();
-                sendOTP(curr->phone, generatedOTP);
-
-                // Verify OTP
-                printf("\nEnter OTP: ");
-                fgets(inputOTP, 7, stdin);
-                inputOTP[strcspn(inputOTP, "\n")] = 0;
-
-                if (atoi(inputOTP) == generatedOTP) {
-                    printf("\n VERIFICATION SUCCESSFUL! Welcome Admin!\n");
-                    sleep(1);
-                    return 1;  // Verified successfully
-                } else {
-                    printf("\n INVALID OTP!\n");
-                    attempts--;
-                    if (attempts > 0) {
-                        printf("Please try again.\n");
-                    }
-                    break;
-                }
-            }
-            curr = curr->next;
-        }
-
-        if (!found) {
-            printf("\n INVALID OUTLET ID!\n");
-            attempts--;
-            if (attempts > 0) {
-                printf("Please try again.\n");
-            }
-        }
-    }
-
-    printf("\n VERIFICATION FAILED! Too many failed attempts.\n");
-    sleep(1);
-    return 0;  // Verification failed
-}
-
-// ==================== FILE OPERATIONS ====================
 
 void saveAllData() {
     saveAdminData();  // Save admin data first
@@ -585,9 +451,179 @@ void loadAllData() {
     printf("Data loaded successfully! Next product number: %d\n", nextProductNumber);
 }
 
-// ==================== PRODUCT MANAGEMENT FUNCTIONS ====================
 
-void addProduct(Product* p) {
+
+
+
+
+
+
+
+//========================================================================
+//----------------------  ADMIN AUTH Functions ---------------------------
+//========================================================================
+
+
+// Load admin data from file
+void loadAdminData() {
+    FILE* f = fopen("admin_data.txt", "r");
+
+    char line[200];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\n")] = 0;
+
+        Admin* a = malloc(sizeof(Admin));
+        char* token = strtok(line, "|");
+        if (token) strcpy(a->outletId, token);
+        token = strtok(NULL, "|");
+        if (token) strcpy(a->phone, token);
+        a->next = NULL;
+
+        if (adminList == NULL) {
+            adminList = a;
+        } else {
+            Admin* curr = adminList;
+            while (curr->next != NULL) curr = curr->next;
+            curr->next = a;
+        }
+    }
+    fclose(f);
+}
+
+// Save admin data to file (future)
+void saveAdminData() {
+    FILE* f = fopen("admin_data.txt", "w");
+    if (!f) {
+        printf("Error saving admin data!\n");
+        return;
+    }
+
+    Admin* curr = adminList;
+    while (curr != NULL) {
+        fprintf(f, "%s|%s\n", curr->outletId, curr->phone);
+        curr = curr->next;
+    }
+    fclose(f);
+}
+
+// Generate random  OTP
+int generateOTP() {
+    srand(time(NULL));
+    return (rand() % 900000);
+}
+
+// Simulate sending OTP to mobile
+void sendOTP(char* phone, int otp) {
+
+    printf("\n OTP SENT TO MOBILE NUMBER: %s successful !\n", phone);
+    printf(" YOUR OTP IS: %d\n", otp);
+    printf(" OTP will expire in 5 minutes\n");
+
+}
+
+// Verify admin credentials with OTP
+int verifyAdmin() {
+    char outletId[MAX_OUTLET_ID];
+    char inputOTP[7];
+    int generatedOTP;
+    int attempts = 3;
+
+    printf("\n+====================================+\n");
+    printf("|         ADMIN VERIFICATION         |\n");
+    printf("+====================================+\n");
+
+    // Check if outlet ID matches
+    while (attempts > 0) {
+        printf("\nAttempts left: %d\n", attempts);
+        printf("Enter Outlet ID: ");
+        fgets(outletId, MAX_OUTLET_ID, stdin);
+        outletId[strcspn(outletId, "\n")] = 0;
+
+        // Search for outlet ID
+        Admin* curr = adminList;
+        int found = 0;
+
+        while (curr != NULL) {
+            if (strcmp(curr->outletId, outletId) == 0) {
+                found = 1;
+                // Generate and send OTP
+                generatedOTP = generateOTP();
+                sendOTP(curr->phone, generatedOTP);
+
+                // Verify OTP
+                printf("\nEnter OTP: ");
+                fgets(inputOTP, 7, stdin);
+                inputOTP[strcspn(inputOTP, "\n")] = 0;
+
+                if (atoi(inputOTP) == generatedOTP) {
+                    printf("\n VERIFICATION SUCCESSFUL! Welcome Admin!\n");
+                    sleep(1);
+                    return 1;  // Verified successfully
+                } else {
+                    printf("\n INVALID OTP!\n");
+                    attempts--;
+                    if (attempts > 0) {
+                        printf("Please try again.\n");
+                    }
+                    break;
+                }
+            }
+            curr = curr->next;
+        }
+
+        if (!found) {
+            printf("\n INVALID OUTLET ID!\n");
+            attempts--;
+            if (attempts > 0) {
+                printf("Please try again.\n");
+            }
+        }
+    }
+
+    printf("\n VERIFICATION FAILED! Too many failed attempts.\n");
+    sleep(1);
+    return 0;  // Verification failed
+}
+
+
+
+
+
+
+
+
+
+
+
+//========================================================================
+//----------------------  Common Functions for Both Portals --------------
+//========================================================================
+
+
+void generateProductId(char* id) {
+    // Find the highest product number from existing products
+    int maxNum = 0;
+    Product* curr = inventory;
+
+    while (curr != NULL) {
+        int num = 0;
+        for (int i = 1; i < strlen(curr->id); i++) {
+            if (isdigit(curr->id[i])) {
+                num = num * 10 + (curr->id[i] - '0');
+            }
+        }
+        if (num > maxNum) {
+            maxNum = num;
+        }
+        curr = curr->next;
+    }
+
+    nextProductNumber = maxNum + 1;
+
+    sprintf(id, "p%03d", nextProductNumber);
+}
+
+void addProduct(Product* p) {   //insert last
     if (inventory == NULL) {
         inventory = p;
     } else {
@@ -599,7 +635,7 @@ void addProduct(Product* p) {
     }
 }
 
-Product* findProduct(char* id) {
+Product* findProduct(char* id) {  // just traverse 
     Product* curr = inventory;
     while (curr != NULL) {
         if (strcmp(curr->id, id) == 0)
@@ -679,8 +715,6 @@ void deleteProduct(char* id) {
     }
     printf("Product '%s' not found!\n", id);
 }
-
-// ONLY updateProduct FUNCTION FIXED (rest unchanged)
 
 void updateProduct(char* id) {
     Product* p = findProduct(id);
@@ -780,8 +814,6 @@ void updateProduct(char* id) {
         
     } while (choice != 4);
 }
-
-// ==================== CART MANAGEMENT FUNCTIONS ====================
 
 void addToCart(char* productId, int qty) {
     Product* p = findProduct(productId);
@@ -920,8 +952,6 @@ int getCartItemCount() {
     }
     return count;
 }
-
-// ==================== ORDER MANAGEMENT FUNCTIONS ====================
 
 void placeOrder() {
     if (currentCart == NULL) {
@@ -1117,7 +1147,6 @@ void updateOrderStatus(int id, char* newStatus) {
     printf("Order #%d status updated to '%s'!\n", id, newStatus);
 }
 
-//verify product exitance
 int verifyProduct(char* productId) {
     Product* curr = inventory;
 
@@ -1131,7 +1160,22 @@ int verifyProduct(char* productId) {
     return 0;
 }
 
-// ==================== CUSTOMER PORTAL FUNCTIONS ====================
+
+
+
+
+
+
+
+
+
+
+
+
+//========================================================================
+//----------------------  Customer Portal Functions ----------------------
+//========================================================================
+
 
 void browseAndBuy() {
     int choice,flag;
@@ -1394,7 +1438,19 @@ void customerMenu() {
     } while (choice != 4);
 }
 
-// ==================== ADMIN PORTAL FUNCTIONS ====================
+
+
+
+
+
+
+
+
+
+//========================================================================
+//----------------------  ADMIN Portal Functions ----------------------
+//========================================================================
+
 
 void adminAddProduct() {
     char name[MAX_NAME];
@@ -1565,7 +1621,6 @@ void adminViewProducts() {
     } while (choice != 2);
 }
 
-
 void adminUpdateProduct() {
     showProducts();
     char id[MAX_ID];
@@ -1594,6 +1649,7 @@ void adminDeleteProduct() {
     deleteProduct(id);
     saveAllData();
 }
+
 void adminCreateorder() {
     printf("\n=== ADMIN CREATE ORDER ===\n");
 
@@ -1934,7 +1990,23 @@ void adminMenu() {
     } while (choice != 7);  
 }
 
-// ==================== MAIN FUNCTION ====================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//========================================================================
+//----------------------   MAIN Functions  -------------------------------
+//========================================================================
 
 int main() {
     loadAllData();
@@ -1964,7 +2036,7 @@ int main() {
                 } else {
                     printf("\nAccess Denied! Press Enter to continue...\n");
                     getchar();
-                }
+                }    
                 break;
             case 3:
                 saveAllData();
