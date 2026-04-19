@@ -1,26 +1,17 @@
 #PRODUCTS
-G001|Fresh Broccoli|Vegetables|50|120.00
-G002|Organic Carrots|Vegetables|100|80.00
-G003|Tomatoes (1kg)|Vegetables|200|100.00
-G004|Potatoes (5kg)|Vegetables|150|180.00
-G005|Onions (1kg)|Vegetables|300|85.00
-G006|Green Chili (250g)|Vegetables|180|40.00
-G007|Basmati Rice (5kg)|Rice & Oil|80|550.00
-G008|Miniket Rice (5kg)|Rice & Oil|100|450.00
-G009|Fresh Eggs (12pcs)|Dairy & Eggs|200|130.00
-G010|Pasteurized Milk (1L)|Dairy & Eggs|150|85.00
-G011|Ghee (500g)|Dairy & Eggs|60|450.00
-G012|Yogurt (500g)|Dairy & Eggs|120|60.00
-G013|Sunflower Oil (5L)|Rice & Oil|90|850.00
-G014|Soybean Oil (5L)|Rice & Oil|120|750.00
-G015|Brown Sugar (1kg)|Spices & Sugar|100|110.00
-G016|Pure Honey (500g)|Spices & Sugar|45|380.00
-G017|Turmeric Powder (200g)|Spices & Sugar|200|65.00
-G018|Cumin Powder (200g)|Spices & Sugar|150|120.00
-G019|Fresh Mutton (1kg)|Meat & Fish|40|900.00
-G020|Fresh Chicken (1kg)|Meat & Fish|100|280.00
-G021|Rui Fish (1kg)|Meat & Fish|60|450.00
-G022|Hilsa Fish (1kg)|Meat & Fish|25|1200.00
+p001|Fresh Broccoli|Vegetables|50|120.00
+p002|Organic Carrots|Vegetables|100|80.00
+p003|Tomatoes (1kg)|Vegetables|200|100.00
+p004|Potatoes (5kg)|Vegetables|150|180.00
+p005|Onions (1kg)|Vegetables|300|85.00
+p006|Green Chili (250g)|Vegetables|180|40.00
+p007|Basmati Rice (5kg)|Rice & Oil|80|550.00
+p008|Miniket Rice (5kg)|Rice & Oil|100|450.00
+p009|Fresh Eggs (12pcs)|Dairy & Eggs|200|130.00
+p010|Pasteurized Milk (1L)|Dairy & Eggs|150|85.00
+p011|Ghee (500g)|Dairy & Eggs|60|450.00
+
+
 
 #END
 
